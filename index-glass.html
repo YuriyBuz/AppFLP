@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#070A0F">
+<title>Foodline · Пульт додатків</title>
+<meta name="description" content="Глибинна карта всіх виробничих і комерційних додатків Food Line Production.">
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Пульт FL">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@200;300;400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap&subset=cyrillic,cyrillic-ext,latin" rel="stylesheet">
+<style>
+/* ================================================================
+   FOODLINE · ПУЛЬТ ДОДАТКІВ — «Скло і глибина»
+   Глибина несе зміст: чим ближче шар, тим частіше ним користуються.
+   ================================================================ */
+:root{
+  --abyss:#05070B;
+  --deep:#080C13;
+  --mid:#0C1119;
+
+  --ink:#E9EEF4;
+  --ink-2:#93A2B4;
+  --ink-3:#5B6979;
+
+  --amber:#E8A33D;
+  --cook:#D9563F;
+  --fill:#E8A33D;
+  --pack:#6F8FD0;
+  --sales:#B07AB4;
+  --people:#D98BA0;
+  --raw:#86B860;
+  --water:#55A99B;
+
+  --glass:rgba(255,255,255,.055);
+  --glass-2:rgba(255,255,255,.10);
+  --edge:rgba(255,255,255,.10);
+  --edge-hi:rgba(255,255,255,.20);
+
+  --r:14px;
+  --bar:58px;
+
+  --f:"Commissioner",system-ui,-apple-system,sans-serif;
+  --m:"Roboto Mono",ui-monospace,monospace;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%;overflow:hidden;overscroll-behavior:none}
+body{
+  background:
+    radial-gradient(1200px 900px at 18% 12%, rgba(85,169,155,.07), transparent 60%),
+    radial-gradient(1000px 800px at 84% 78%, rgba(232,163,61,.06), transparent 62%),
+    linear-gradient(170deg,#070A0F 0%,#0A0F17 46%,#060810 100%);
+  color:var(--ink);
+  font-family:var(--f);
+  font-size:14px;line-height:1.5;font-weight:400;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--amber);outline-offset:3px;border-radius:6px}
+.m{font-family:var(--m);font-variant-numeric:tabular-nums}
+
+/* ---------- скло ---------- */
+.glass{
+  background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.022));
+  border:1px solid var(--edge);
+  box-shadow:
+    inset 0 1px 0 var(--edge-hi),
+    inset 0 -1px 0 rgba(0,0,0,.35),
+    0 26px 64px rgba(0,0,0,.55);
+  backdrop-filter:blur(26px) saturate(150%);
+  -webkit-backdrop-filter:blur(26px) saturate(150%);
+}
+@supports not (backdrop-filter: blur(2px)){
+  .glass{background:rgba(13,18,26,.96)}
+}
+
+/* ================= ГЛИБИНА ================= */
+#stars{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:.75}
+#vign{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(115% 85% at 50% 45%,transparent 42%,rgba(3,5,9,.72) 100%);
+}
+#field{position:fixed;inset:0;z-index:2;transition:filter .45s ease,opacity .45s ease}
+#field.dim{filter:blur(7px) saturate(.7);opacity:.42}
+
+.plane{position:absolute;inset:0;will-change:transform;transition:filter .5s ease,opacity .5s ease}
+.plane[data-z="live"]{z-index:5}
+.plane[data-z="doc"] {z-index:4;filter:blur(.5px);opacity:.94}
+.plane[data-z="test"]{z-index:3;filter:blur(1.3px);opacity:.8}
+.plane[data-z="arch"]{z-index:2;filter:blur(2.6px);opacity:.5}
+/* наведення різкості на обраний шар */
+body.focus .plane{filter:blur(3.4px);opacity:.28}
+body.focus .plane.sharp{filter:none;opacity:1}
+
+.halo{
+  position:absolute;border-radius:50%;pointer-events:none;z-index:1;
+  filter:blur(46px);opacity:.30;transition:opacity .4s ease,transform .4s ease;
+}
+.halo.on{opacity:.6;transform:scale(1.1)}
+.halo.off{opacity:.08}
+
+/* ---------- вузол ---------- */
+.pin{
+  position:absolute;width:38px;height:38px;margin:-19px 0 0 -19px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:opacity .35s ease,transform .18s cubic-bezier(.2,.9,.3,1.4);
+}
+.pin i{
+  display:block;border-radius:50%;background:var(--c,#fff);
+  box-shadow:0 0 12px 1px color-mix(in srgb,var(--c,#fff) 55%,transparent);
+  transition:transform .18s ease;
+}
+.pin[data-s="live"] i{width:11px;height:11px}
+.pin[data-s="doc"]  i{width:10px;height:10px;background:transparent;border:2px solid var(--c);box-shadow:0 0 10px color-mix(in srgb,var(--c) 40%,transparent)}
+.pin[data-s="test"] i{width:7px;height:7px;background:var(--ink-2);box-shadow:0 0 8px rgba(147,162,180,.5)}
+.pin[data-s="arch"] i{width:6px;height:6px;background:var(--ink-3);box-shadow:none}
+.pin::after{
+  content:"";position:absolute;inset:6px;border-radius:50%;
+  border:1px solid var(--c,#fff);opacity:0;transform:scale(.6);
+  transition:opacity .2s ease,transform .2s ease;
+}
+.pin:hover,.pin:focus-visible{transform:scale(1.25)}
+.pin:hover::after,.pin:focus-visible::after,.pin.hit::after{opacity:.85;transform:scale(1)}
+.pin.fav i{box-shadow:0 0 0 2px rgba(232,163,61,.85),0 0 16px 2px rgba(232,163,61,.5)}
+.pin.mute{opacity:.1;pointer-events:none}
+
+/* ---------- підпис кластера ---------- */
+.clabel{
+  position:absolute;z-index:9;transform:translate(-50%,-50%);
+  display:flex;align-items:center;gap:7px;padding:4px 10px 4px 8px;border-radius:100px;
+  background:rgba(8,12,19,.55);border:1px solid rgba(255,255,255,.09);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  cursor:pointer;white-space:nowrap;
+  transition:border-color .2s,background .2s,opacity .35s;
+}
+.clabel:hover{border-color:rgba(255,255,255,.24);background:rgba(12,17,25,.75)}
+.clabel.on{border-color:var(--c);background:rgba(12,17,25,.85)}
+.clabel.off{opacity:.28}
+.clabel b{
+  font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);
+}
+.clabel u{width:6px;height:6px;border-radius:50%;background:var(--c);text-decoration:none;flex:none}
+.clabel s{font-family:var(--m);font-size:10px;color:var(--ink-3);text-decoration:none}
+
+/* ---------- підказка ---------- */
+#tip{
+  position:fixed;z-index:40;pointer-events:none;opacity:0;
+  transform:translate(-50%,-100%) translateY(-16px);
+  border-radius:var(--r);padding:11px 13px;width:min(268px,72vw);
+  transition:opacity .16s ease;
+}
+#tip.show{opacity:1}
+#tip b{display:block;font-size:14px;font-weight:600;line-height:1.3;margin-bottom:4px}
+#tip p{margin:0;font-size:12px;line-height:1.45;color:var(--ink-2)}
+#tip u{
+  display:flex;gap:8px;margin-top:8px;text-decoration:none;
+  font-family:var(--m);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);
+}
+#tip u em{font-style:normal;margin-left:auto;color:var(--c,var(--amber))}
+
+/* ================= ВЕРХНЯ СМУГА ================= */
+.bar{
+  position:fixed;z-index:30;
+  top:calc(12px + env(safe-area-inset-top,0px));left:12px;right:12px;
+  height:var(--bar);border-radius:var(--r);
+  display:flex;align-items:center;gap:10px;padding:0 12px 0 14px;
+}
+.brand{display:flex;flex-direction:column;gap:1px;min-width:0}
+.brand b{font-size:14px;font-weight:600;letter-spacing:.20em;text-transform:uppercase;line-height:1}
+.brand span{font-family:var(--m);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3)}
+.orb{
+  width:9px;height:9px;border-radius:50%;background:var(--amber);flex:none;margin-right:11px;
+  box-shadow:0 0 0 4px rgba(232,163,61,.10),0 0 18px rgba(232,163,61,.7);
+  animation:breathe 3.6s ease-in-out infinite;
+}
+@keyframes breathe{50%{box-shadow:0 0 0 8px rgba(232,163,61,.04),0 0 26px rgba(232,163,61,.95)}}
+
+.gbtn{
+  padding:7px 13px;border-radius:100px;font-size:12px;font-weight:500;color:var(--ink-2);
+  border:1px solid var(--edge);background:rgba(255,255,255,.03);
+  transition:color .16s,border-color .16s,background .16s;white-space:nowrap;
+}
+.gbtn:hover{color:var(--ink);border-color:var(--edge-hi);background:rgba(255,255,255,.08)}
+.gbtn.on{color:#0A0D13;background:var(--amber);border-color:var(--amber);font-weight:600}
+.net{
+  display:flex;align-items:center;gap:7px;margin-left:auto;
+  font-family:var(--m);font-size:10px;letter-spacing:.08em;color:var(--ink-3);white-space:nowrap;
+}
+.net i{width:6px;height:6px;border-radius:50%;background:var(--raw);box-shadow:0 0 8px rgba(134,184,96,.7)}
+.net.off i{background:var(--cook);box-shadow:0 0 8px rgba(217,86,63,.7)}
+
+/* ================= ШТОРКА ЗІ СПИСКОМ ================= */
+.sheet{
+  position:fixed;z-index:35;left:12px;right:12px;
+  bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  border-radius:var(--r);
+  height:96px;
+  max-height:calc(100vh - var(--bar) - 40px);
+  max-height:calc(100dvh - var(--bar) - 40px);
+  display:flex;flex-direction:column;overflow:hidden;
+  transition:height .42s cubic-bezier(.22,.85,.28,1);
+}
+.sheet.open{
+  height:calc(100vh - var(--bar) - 44px - env(safe-area-inset-top,0px));
+  height:calc(100dvh - var(--bar) - 44px - env(safe-area-inset-top,0px));
+}
+
+.grip{
+  flex:none;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.grip::before{content:"";width:38px;height:3px;border-radius:3px;background:rgba(255,255,255,.22)}
+
+.shead{flex:none;padding:0 14px 12px;display:flex;flex-direction:column;gap:10px}
+.srow{display:flex;align-items:center;gap:10px}
+.find{position:relative;flex:1;min-width:0}
+.find input{
+  width:100%;padding:9px 34px 9px 34px;border-radius:100px;
+  background:rgba(0,0,0,.28);border:1px solid var(--edge);
+  color:var(--ink);font-family:inherit;font-size:13px;
+}
+.find input::placeholder{color:var(--ink-3)}
+.find input:focus{outline:none;border-color:rgba(232,163,61,.6);background:rgba(0,0,0,.42)}
+.find .ic{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--ink-3);display:flex;pointer-events:none}
+.find .kb{position:absolute;right:11px;top:50%;transform:translateY(-50%);font-family:var(--m);font-size:10px;color:var(--ink-3);pointer-events:none}
+.find input:focus ~ .kb{opacity:0}
+
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:none;display:flex;align-items:center;gap:6px;
+  padding:5px 11px;border-radius:100px;font-size:11.5px;color:var(--ink-2);
+  border:1px solid var(--edge);background:rgba(255,255,255,.025);
+  transition:color .15s,border-color .15s,background .15s;
+}
+.chip:hover{color:var(--ink);border-color:var(--edge-hi)}
+.chip.on{color:var(--ink);border-color:var(--c,var(--amber));background:rgba(255,255,255,.09);font-weight:600}
+.chip u{width:6px;height:6px;border-radius:50%;background:var(--c);text-decoration:none;flex:none}
+.chip s{font-family:var(--m);font-size:9.5px;color:var(--ink-3);text-decoration:none}
+.chip.on s{color:var(--ink-2)}
+.ctag{
+  flex:none;align-self:center;font-family:var(--m);font-size:9px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--ink-3);padding-right:2px;
+}
+
+.sbody{flex:1;overflow-y:auto;padding:0 14px 16px;scrollbar-width:thin}
+.sbody::-webkit-scrollbar{width:8px}
+.sbody::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:5px}
+
+.peek{
+  padding:0 16px 14px;font-size:12px;color:var(--ink-3);
+  display:flex;align-items:center;gap:8px;
+}
+.peek b{color:var(--ink-2);font-weight:500}
+.sheet.open .peek{display:none}
+.sheet.open .shead{display:flex}
+.sheet.open .sbody{display:block}
+.sheet:not(.open) .shead,.sheet:not(.open) .sbody{display:none}
+
+.sect{display:flex;align-items:center;gap:12px;margin:16px 0 9px}
+.sect h2{margin:0;font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap}
+.sect .ln{flex:1;height:1px;background:rgba(255,255,255,.08)}
+.sect .n{font-family:var(--m);font-size:10px;color:var(--ink-3)}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:8px}
+.item{
+  position:relative;border-radius:11px;padding:11px 12px 10px 14px;
+  background:rgba(255,255,255,.032);border:1px solid rgba(255,255,255,.07);
+  display:flex;flex-direction:column;gap:6px;min-height:96px;
+  transition:background .16s,border-color .16s,transform .16s;
+}
+.item::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:2px;border-radius:2px;background:var(--c);opacity:.8}
+.item:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16);transform:translateY(-1px)}
+.item h4{margin:0;font-size:13.5px;font-weight:600;line-height:1.3}
+.item p{margin:0;font-size:11.5px;line-height:1.45;color:var(--ink-2);flex:1}
+.item .meta{
+  display:flex;align-items:center;gap:8px;font-family:var(--m);font-size:9.5px;color:var(--ink-3);
+  padding-top:7px;border-top:1px solid rgba(255,255,255,.06);
+}
+.item .meta a{position:relative;z-index:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:56%}
+.item .meta a:hover{color:var(--amber)}
+.item .meta em{margin-left:auto;font-style:normal;letter-spacing:.1em;text-transform:uppercase;color:var(--c);opacity:.85}
+.item .go{position:absolute;inset:0;z-index:1;border-radius:11px}
+.item .star{
+  position:absolute;top:8px;right:8px;z-index:2;width:24px;height:24px;
+  display:flex;align-items:center;justify-content:center;color:var(--ink-3);
+  opacity:0;transition:opacity .15s,color .15s;
+}
+.item:hover .star,.item .star.on,.item .star:focus-visible{opacity:1}
+.item .star:hover,.item .star.on{color:var(--amber)}
+
+.none{
+  border:1px dashed rgba(255,255,255,.14);border-radius:11px;
+  padding:28px 18px;text-align:center;color:var(--ink-2);font-size:12.5px;
+}
+.none b{display:block;color:var(--ink);font-size:14px;margin-bottom:5px}
+
+/* ---------- сповіщення ---------- */
+#toast{
+  position:fixed;z-index:60;right:14px;
+  bottom:calc(120px + env(safe-area-inset-bottom,0px));
+  border-radius:12px;padding:10px 12px;display:none;align-items:center;gap:10px;font-size:12.5px;
+}
+#toast.show{display:flex}
+#toast b{font-weight:600}
+
+/* ---------- запуск ---------- */
+#boot{
+  position:fixed;inset:0;z-index:99;background:var(--abyss);
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .6s ease,visibility .6s;
+}
+#boot.out{opacity:0;visibility:hidden}
+#boot i{
+  width:10px;height:10px;border-radius:50%;background:var(--amber);
+  box-shadow:0 0 0 0 rgba(232,163,61,.5);animation:ping 1.5s ease-out infinite;
+}
+@keyframes ping{
+  0%{box-shadow:0 0 0 0 rgba(232,163,61,.45);transform:scale(1)}
+  70%{box-shadow:0 0 0 44px rgba(232,163,61,0);transform:scale(1.25)}
+  100%{box-shadow:0 0 0 0 rgba(232,163,61,0);transform:scale(1)}
+}
+
+/* ---------- спокій і доступність ---------- */
+body.calm #stars{display:none}
+body.calm *{animation:none!important}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  #stars{display:none}
+}
+
+@media (max-width:760px){
+  :root{--r:12px;--bar:54px}
+  .bar{gap:8px;padding:0 10px 0 12px}
+  .brand span{display:none}
+  .net{display:none}
+  .cards{grid-template-columns:1fr}
+  .item .star{opacity:1}
+  #tip{width:min(240px,80vw)}
+}
+</style>
+</head>
+<body>
+
+<canvas id="stars" aria-hidden="true"></canvas>
+<div id="vign" aria-hidden="true"></div>
+<div id="field"></div>
+<div id="tip" class="glass" role="tooltip" aria-hidden="true"></div>
+
+<header class="bar glass">
+  <span class="orb" aria-hidden="true"></span>
+  <div class="brand"><b>Foodline</b><span>Пульт додатків</span></div>
+  <div class="net" id="net"><i></i><span id="netText">41 вузол</span></div>
+  <button class="gbtn" id="btnInstall" hidden>Встановити</button>
+  <button class="gbtn" id="btnCalm" title="Вимкнути рух">Спокій</button>
+  <a class="gbtn" href="https://github.com/YuriyBuz?tab=repositories" target="_blank" rel="noopener">GitHub</a>
+</header>
+
+<section class="sheet glass" id="sheet" aria-label="Список додатків">
+  <div class="grip" id="grip" role="button" tabindex="0" aria-expanded="false" aria-label="Показати список"></div>
+
+  <div class="peek" id="peek"></div>
+
+  <div class="shead">
+    <div class="srow">
+      <div class="find">
+        <span class="ic" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        </span>
+        <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Пошук додатка, ділянки, репозиторію" aria-label="Пошук">
+        <span class="kb">esc</span>
+      </div>
+      <button class="gbtn" id="btnReset">Скинути</button>
+    </div>
+    <div class="chips" id="zoneChips"></div>
+    <div class="chips" id="mixChips"></div>
+  </div>
+
+  <div class="sbody" id="list"></div>
+</section>
+
+<div id="toast" class="glass" role="status">
+  <b>Є новіша версія пульта</b>
+  <button class="gbtn" id="btnUpdate">Оновити</button>
+</div>
+
+<div id="boot"><i></i></div>
+
+<script>
+/* ================================================================
+   КАТАЛОГ — щоб додати додаток, впишіть один рядок у APPS
+   ================================================================ */
+const OWNER = 'YuriyBuz';
+const TODAY = new Date('2026-08-12');
+
+const ZONES = [
+  {id:'raw',    label:'Сировина',   c:'#86B860', w:[.15,.30], n:[.24,.17]},
+  {id:'water',  label:'Вода · ХВО', c:'#55A99B', w:[.13,.67], n:[.73,.24]},
+  {id:'cook',   label:'Варка',      c:'#D9563F', w:[.37,.45], n:[.33,.38]},
+  {id:'fill',   label:'Розлив',     c:'#E8A33D', w:[.58,.27], n:[.74,.47]},
+  {id:'pack',   label:'Пакування',  c:'#6F8FD0', w:[.80,.41], n:[.25,.58]},
+  {id:'sales',  label:'Збут',       c:'#B07AB4', w:[.68,.69], n:[.68,.66]},
+  {id:'people', label:'Персонал',   c:'#D98BA0', w:[.38,.79], n:[.35,.79]}
+];
+
+const GROUPS = [
+  {id:'daily', label:'Щоденний контур'},
+  {id:'sales', label:'Замовлення та збут'},
+  {id:'plan',  label:'Планування та запаси'},
+  {id:'ref',   label:'Інструкції та довідники'},
+  {id:'learn', label:'Навчання і тести'},
+  {id:'arch',  label:'Архів і чернетки'}
+];
+
+const STATES = [
+  {id:'live', label:'Робочі'},
+  {id:'doc',  label:'Інструкції'},
+  {id:'test', label:'Навчання'},
+  {id:'arch', label:'Архів'}
+];
+
+const ROLES = ['Майстер','Контролер','Механік','Оператор','Збут','Персонал'];
+
+const APPS = [
+  {repo:'registration', name:'Реєстрація зміни', desc:'Кіоск на планшеті: початок і кінець зміни, звірка табеля.', group:'daily', zone:'people', roles:['Персонал'], state:'live', upd:'2026-08-02'},
+  {repo:'shift-checklist', name:'Портал майстра зміни', desc:'Чек-листи по ділянках і контроль виконання за зміну.', group:'daily', zone:'cook', roles:['Майстер'], state:'live', upd:'2026-07-23'},
+  {repo:'shift-checklist_QC', name:'QC Master', desc:'Зміновий контур контролера на лінії розливу.', group:'daily', zone:'fill', roles:['Контролер'], state:'live', upd:'2025-12-27'},
+  {repo:'quality-controller-notebook.', name:'Цифровий блокнот QC', desc:'Вхідний контроль, варка, мийка, вода, пакування, маркування.', group:'daily', zone:'cook', roles:['Контролер'], state:'live', upd:'2026-08-09'},
+  {repo:'mechanic-checklist', name:'Чек-лист механіка зміни', desc:'Обхід обладнання і фіксація стану вузлів.', group:'daily', zone:'pack', roles:['Механік'], state:'live', upd:'2026-06-06'},
+  {repo:'AIScaner', name:'Завдання на варку', desc:'Сканування завдання, фото у Drive, звірка рецептури.', group:'daily', zone:'cook', roles:['Контролер','Оператор'], state:'live', upd:'2026-07-30'},
+  {repo:'WATER-TREATMENT-UNIT-checklist', name:'Чек-лист ХВО', desc:'Контроль роботи станції водопідготовки за зміну.', group:'daily', zone:'water', roles:['Механік'], state:'live', upd:'2025-11-15'},
+  {repo:'portal', name:'Портал працівника', desc:'Графік, підміни, тести — усе в одному вікні.', group:'daily', zone:'people', roles:['Персонал'], state:'live', upd:'2026-07-16'},
+
+  {repo:'orderFLP-6-', name:'Замовлення соусів · FLP-6', desc:'Бланк на 6 позицій із відправкою на пошту.', group:'sales', zone:'sales', roles:['Збут'], state:'live', upd:'2026-08-10'},
+  {repo:'orderFLP-13-', name:'Замовлення соусів · FLP-13', desc:'Бланк на 13 позицій із відправкою на пошту.', group:'sales', zone:'sales', roles:['Збут'], state:'live', upd:'2026-08-11'},
+  {repo:'orderFLP-19-', name:'Замовлення соусів · FLP-19', desc:'Бланк на 19 позицій із відправкою на пошту.', group:'sales', zone:'sales', roles:['Збут'], state:'live', upd:'2026-08-11'},
+  {repo:'Commercial-Intelligence-API', name:'Комерційний пульт', desc:'Продажі, мережі та маржа в одному розрізі.', group:'sales', zone:'sales', roles:['Збут'], state:'live', upd:'2026-08-09'},
+  {repo:'complaint', name:'Створення рекламації', desc:'Оформлення претензії з фото і передачею в якість.', group:'sales', zone:'sales', roles:['Збут','Контролер'], state:'live', upd:'2025-09-29'},
+
+  {repo:'MRP_Import', name:'MRP · Supply Deck', desc:'Потреба в сировині та горизонт постачання по блоках.', group:'plan', zone:'raw', roles:['Збут','Майстер'], state:'live', upd:'2026-08-08'},
+  {repo:'Supply_Planner', name:'Планувальник сировини', desc:'Розрахунок закупівель під план виробництва.', group:'plan', zone:'raw', roles:['Збут'], state:'live', upd:'2026-07-21'},
+  {repo:'Spare-parts-mechanical-service', name:'Облік ЗІП', desc:'Запчастини механічної служби: залишки і видача.', group:'plan', zone:'pack', roles:['Механік'], state:'live', upd:'2026-04-25'},
+  {repo:'schedule', name:'Графік роботи', desc:'Розстановка працівників по змінах на місяць.', group:'plan', zone:'people', roles:['Майстер','Персонал'], state:'live', upd:'2026-03-28'},
+  {repo:'R-D', name:'R&D Deck', desc:'Розробка нових продуктів: статуси і етапи проєктів.', group:'plan', zone:'cook', roles:['Контролер'], state:'live', upd:'2026-08-11'},
+
+  {repo:'Ingredient_Compatibility_Matrix', name:'Сумісність сировини PRO', desc:'Сканер: що з чим можна ставити поруч на зберігання.', group:'ref', zone:'raw', roles:['Контролер','Оператор'], state:'doc', upd:'2026-06-21'},
+  {repo:'raw_material', name:'Переробка сировини', desc:'Порядок підготовки сировини перед подачею у варку.', group:'ref', zone:'raw', roles:['Оператор'], state:'doc', upd:'2026-04-30'},
+  {repo:'Instructions-for-monitoring-water-quality', name:'Контроль якості води', desc:'Що, коли і чим міряти на станції ХВО.', group:'ref', zone:'water', roles:['Контролер','Механік'], state:'doc', upd:'2026-04-26'},
+  {repo:'washing_water_tanks', name:'Санобробка накопичувачів води', desc:'Регламент мийки синіх ємностей запасу води.', group:'ref', zone:'water', roles:['Оператор'], state:'doc', upd:'2026-06-20'},
+  {repo:'tank_washing', name:'Санітарна обробка ємностей', desc:'Мийка варильних і проміжних ємностей.', group:'ref', zone:'cook', roles:['Оператор'], state:'doc', upd:'2026-06-08'},
+  {repo:'Troubleshooting', name:'Усунення несправностей', desc:'Пам\u2019ятка оператора: типові збої і що робити першим.', group:'ref', zone:'cook', roles:['Оператор','Механік'], state:'doc', upd:'2026-07-04'},
+  {repo:'Rules-for-the-transition-between-batches-Bottling-', name:'Перехід між партіями', desc:'Правила переналагодження лінії розливу.', group:'ref', zone:'fill', roles:['Майстер','Оператор'], state:'doc', upd:'2025-12-13'},
+  {repo:'TechInst', name:'Налаштування обладнання', desc:'Технічні інструкції з параметрами по вузлах.', group:'ref', zone:'pack', roles:['Механік'], state:'doc', upd:'2026-07-24'},
+  {repo:'TechInst_PWA', name:'Налаштування обладнання · PWA', desc:'Та сама база, встановлюється на планшет офлайн.', group:'ref', zone:'pack', roles:['Механік'], state:'doc', upd:'2026-07-19'},
+  {repo:'Smart_code', name:'Довідник SMART КОД', desc:'Як читати і формувати код партії на упаковці.', group:'ref', zone:'pack', roles:['Оператор','Контролер'], state:'doc', upd:'2026-05-20'},
+  {repo:'viewport', name:'ПЕТ тара', desc:'Довідник по пляшці, кришці та етикетці.', group:'ref', zone:'pack', roles:['Оператор','Збут'], state:'doc', upd:'2026-01-09'},
+  {repo:'Safety_instruction', name:'Інструкція з ТБ', desc:'Повна інструкція з техніки безпеки на виробництві соусів.', group:'ref', zone:'people', roles:['Персонал'], state:'doc', upd:'2026-05-30'},
+
+  {repo:'TEST_1', name:'Тест: паспорт якості', desc:'Перевірка знань за FSSC 22000 v6.', group:'learn', zone:'people', roles:['Контролер'], state:'test', upd:'2026-06-03'},
+  {repo:'TEST_3', name:'Тест: техніка безпеки', desc:'Вхідна перевірка знань з ТБ.', group:'learn', zone:'people', roles:['Персонал'], state:'test', upd:'2026-06-03'},
+  {repo:'TEST_4', name:'Компетенції: майстер зміни', desc:'Оцінка знань перед допуском до зміни.', group:'learn', zone:'people', roles:['Майстер'], state:'test', upd:'2026-06-01'},
+  {repo:'TEST_5', name:'Компетенції: контролер якості', desc:'Оцінка знань перед допуском до контролю.', group:'learn', zone:'people', roles:['Контролер'], state:'test', upd:'2026-06-02'},
+  {repo:'TEST_6', name:'Компетенції: механік зміни', desc:'Оцінка знань перед допуском до обслуговування.', group:'learn', zone:'people', roles:['Механік'], state:'test', upd:'2026-06-02'},
+
+  {repo:'task-scanner', name:'Завдання на варку · стара версія', desc:'Замінено на AIScaner.', group:'arch', zone:'cook', roles:['Контролер'], state:'arch', upd:'2026-04-20'},
+  {repo:'ERP', name:'MRP Import · попередня версія', desc:'Замінено на MRP · Supply Deck.', group:'arch', zone:'raw', roles:['Збут'], state:'arch', upd:'2026-04-06'},
+  {repo:'test_2', name:'Тест: техніка безпеки · дубль', desc:'Дублює TEST_3.', group:'arch', zone:'people', roles:['Персонал'], state:'arch', upd:'2026-04-01'},
+  {repo:'Store_check', name:'Store check', desc:'Python-скрипт збору даних по мережах, без вебсторінки.', group:'arch', zone:'sales', roles:['Збут'], state:'arch', upd:'2026-05-18', nopage:true},
+  {repo:'EMP', name:'EMP', desc:'Лише README, сторінки немає.', group:'arch', zone:'people', roles:['Персонал'], state:'arch', upd:'2026-05-20', nopage:true},
+  {repo:'instruction', name:'instruction', desc:'Порожній репозиторій.', group:'arch', zone:'people', roles:['Персонал'], state:'arch', upd:'2026-05-17', nopage:true}
+];
+
+/* ================= СЛУЖБОВЕ ================= */
+const store = (() => {
+  let mem = {}, ok = true;
+  try { localStorage.setItem('__fl','1'); localStorage.removeItem('__fl'); } catch(e){ ok = false; }
+  return {
+    get(k){ try { return ok ? localStorage.getItem(k) : (mem[k] ?? null); } catch(e){ return mem[k] ?? null; } },
+    set(k,v){ try { ok ? localStorage.setItem(k,v) : (mem[k]=v); } catch(e){ mem[k]=v; } }
+  };
+})();
+
+const el = id => document.getElementById(id);
+const Z   = id => ZONES.find(z => z.id === id) || {label:'', c:'#888'};
+const link = a => a.nopage ? `https://github.com/${OWNER}/${a.repo}` : `https://${OWNER.toLowerCase()}.github.io/${a.repo}/`;
+const dmy = s => { const p = s.split('-'); return `${p[2]}.${p[1]}.${p[0].slice(2)}`; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const S = {
+  q:'', zone:'all', st:'all', role:'all',
+  favs: new Set(JSON.parse(store.get('flglass:favs') || '[]'))
+};
+
+function fits(a){
+  if (S.zone !== 'all' && a.zone !== S.zone) return false;
+  if (S.st   !== 'all' && a.state !== S.st) return false;
+  if (S.role !== 'all' && !a.roles.includes(S.role)) return false;
+  if (!S.q) return true;
+  const hay = [a.name, a.desc, a.repo, Z(a.zone).label, a.roles.join(' ')].join(' ').toLowerCase();
+  return S.q.split(/\s+/).every(t => hay.includes(t));
+}
+
+/* ================= КАРТА ================= */
+const field = el('field');
+const planes = {};
+STATES.forEach(s => {
+  const p = document.createElement('div');
+  p.className = 'plane';
+  p.dataset.z = s.id;
+  field.appendChild(p);
+  planes[s.id] = p;
+});
+const labelLayer = document.createElement('div');
+labelLayer.style.cssText = 'position:absolute;inset:0;z-index:9';
+field.appendChild(labelLayer);
+
+const pins = new Map();   // repo -> елемент
+const halos = new Map();  // zone -> елемент
+const labels = new Map(); // zone -> елемент
+
+ZONES.forEach(z => {
+  const h = document.createElement('div');
+  h.className = 'halo';
+  h.style.background = z.c;
+  field.appendChild(h);
+  halos.set(z.id, h);
+
+  const l = document.createElement('button');
+  l.className = 'clabel';
+  l.style.setProperty('--c', z.c);
+  l.innerHTML = `<u></u><b>${esc(z.label)}</b><s>${APPS.filter(a => a.zone === z.id).length}</s>`;
+  l.addEventListener('click', () => { S.zone = S.zone === z.id ? 'all' : z.id; paint(); });
+  labelLayer.appendChild(l);
+  labels.set(z.id, l);
+});
+
+APPS.forEach(a => {
+  const z = Z(a.zone);
+  const p = document.createElement('a');
+  p.className = 'pin';
+  p.href = link(a);
+  p.target = '_blank';
+  p.rel = 'noopener';
+  p.dataset.s = a.state;
+  p.dataset.repo = a.repo;
+  p.style.setProperty('--c', z.c);
+  p.setAttribute('aria-label', a.name);
+  p.innerHTML = '<i></i>';
+  p.addEventListener('mouseenter', e => tip(a, p));
+  p.addEventListener('focus', () => tip(a, p));
+  p.addEventListener('mouseleave', hideTip);
+  p.addEventListener('blur', hideTip);
+  planes[a.state].appendChild(p);
+  pins.set(a.repo, p);
+});
+
+/* розкладка: вузли лягають золотою спіраллю навколо свого кластера */
+function layout(){
+  const w = innerWidth, h = innerHeight;
+  const narrow = w < 760 || h > w;
+  const R = Math.min(w, h) * (narrow ? .105 : .115);
+
+  ZONES.forEach(z => {
+    const [fx, fy] = narrow ? z.n : z.w;
+    const cx = fx * w, cy = fy * h;
+    const items = APPS.filter(a => a.zone === z.id);
+    const n = items.length;
+
+    items.forEach((a, i) => {
+      const ang = i * 2.399963;
+      const rr = R * Math.sqrt((i + .55) / (n + .35));
+      const x = cx + rr * Math.cos(ang);
+      const y = cy + rr * Math.sin(ang);
+      const p = pins.get(a.repo);
+      p.style.left = x.toFixed(1) + 'px';
+      p.style.top  = y.toFixed(1) + 'px';
+    });
+
+    const hs = R * 3.1;
+    const halo = halos.get(z.id);
+    halo.style.width = halo.style.height = hs + 'px';
+    halo.style.left = (cx - hs / 2) + 'px';
+    halo.style.top  = (cy - hs / 2) + 'px';
+
+    const lab = labels.get(z.id);
+    lab.style.left = cx + 'px';
+    lab.style.top  = (cy - R - 26) + 'px';
+  });
+}
+
+/* паралакс: ближні шари рухаються сильніше */
+const DEPTH = {live:1, doc:.66, test:.42, arch:.24};
+let px = 0, py = 0, tx = 0, ty = 0, raf = null;
+function drift(){
+  px += (tx - px) * .06;
+  py += (ty - py) * .06;
+  for (const k in planes){
+    const d = DEPTH[k];
+    planes[k].style.transform = `translate3d(${(px * d).toFixed(2)}px,${(py * d).toFixed(2)}px,0)`;
+  }
+  labelLayer.style.transform = `translate3d(${(px * .8).toFixed(2)}px,${(py * .8).toFixed(2)}px,0)`;
+  raf = requestAnimationFrame(drift);
+}
+function startDrift(){ if (!raf && !calm() && !reduced) raf = requestAnimationFrame(drift); }
+function stopDrift(){ if (raf){ cancelAnimationFrame(raf); raf = null; } }
+addEventListener('pointermove', e => {
+  if (e.pointerType === 'touch') return;
+  tx = (e.clientX / innerWidth - .5) * -26;
+  ty = (e.clientY / innerHeight - .5) * -18;
+}, {passive:true});
+
+/* ================= ПІДКАЗКА ================= */
+function tip(a, pin){
+  const t = el('tip'), z = Z(a.zone), r = pin.getBoundingClientRect();
+  t.style.setProperty('--c', z.c);
+  t.innerHTML = `<b>${esc(a.name)}</b><p>${esc(a.desc)}</p>
+    <u><span>${esc(a.repo)}</span><em>${esc(z.label)} · ${dmy(a.upd)}</em></u>`;
+  const x = Math.min(Math.max(r.left + r.width / 2, 150), innerWidth - 150);
+  t.style.left = x + 'px';
+  t.style.top = r.top + 'px';
+  t.classList.add('show');
+}
+const hideTip = () => el('tip').classList.remove('show');
+
+/* ================= ШТОРКА ================= */
+const sheet = el('sheet'), grip = el('grip');
+function openSheet(on){
+  sheet.classList.toggle('open', on);
+  field.classList.toggle('dim', on);
+  grip.setAttribute('aria-expanded', String(on));
+  grip.setAttribute('aria-label', on ? 'Сховати список' : 'Показати список');
+  if (on) setTimeout(() => el('q').focus({preventScroll:true}), 120);
+}
+grip.addEventListener('click', () => openSheet(!sheet.classList.contains('open')));
+grip.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openSheet(!sheet.classList.contains('open')); }
+});
+el('peek').addEventListener('click', () => openSheet(true));
+
+/* ================= ФІЛЬТРИ ================= */
+function buildChips(){
+  const zc = el('zoneChips');
+  zc.innerHTML = '<span class="ctag">Ділянка</span>';
+  const all = document.createElement('button');
+  all.className = 'chip' + (S.zone === 'all' ? ' on' : '');
+  all.innerHTML = `Усі<s>${APPS.length}</s>`;
+  all.addEventListener('click', () => { S.zone = 'all'; paint(); });
+  zc.appendChild(all);
+  ZONES.forEach(z => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (S.zone === z.id ? ' on' : '');
+    b.style.setProperty('--c', z.c);
+    b.innerHTML = `<u></u>${esc(z.label)}<s>${APPS.filter(a => a.zone === z.id).length}</s>`;
+    b.addEventListener('click', () => { S.zone = S.zone === z.id ? 'all' : z.id; paint(); });
+    zc.appendChild(b);
+  });
+
+  const mc = el('mixChips');
+  mc.innerHTML = '<span class="ctag">Шар</span>';
+  STATES.forEach(s => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (S.st === s.id ? ' on' : '');
+    b.innerHTML = `${esc(s.label)}<s>${APPS.filter(a => a.state === s.id).length}</s>`;
+    b.addEventListener('click', () => { S.st = S.st === s.id ? 'all' : s.id; paint(); });
+    mc.appendChild(b);
+  });
+  const sep = document.createElement('span');
+  sep.className = 'ctag';
+  sep.style.paddingLeft = '8px';
+  sep.textContent = 'Роль';
+  mc.appendChild(sep);
+  ROLES.forEach(r => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (S.role === r ? ' on' : '');
+    b.textContent = r;
+    b.addEventListener('click', () => { S.role = S.role === r ? 'all' : r; paint(); });
+    mc.appendChild(b);
+  });
+}
+
+/* ================= СПИСОК ================= */
+function card(a){
+  const z = Z(a.zone), fav = S.favs.has(a.repo);
+  const d = document.createElement('article');
+  d.className = 'item';
+  d.style.setProperty('--c', z.c);
+  d.innerHTML = `
+    <a class="go" href="${link(a)}" target="_blank" rel="noopener" aria-label="Відкрити ${esc(a.name)}"></a>
+    <button class="star${fav ? ' on' : ''}" type="button" aria-pressed="${fav}" title="${fav ? 'Прибрати з обраного' : 'Додати в обране'}">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="${fav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">
+        <path d="M12 3l2.6 5.6 6.1.8-4.5 4.2 1.2 6L12 16.8 6.6 19.6l1.2-6L3.3 9.4l6.1-.8z"/></svg>
+    </button>
+    <h4>${esc(a.name)}</h4>
+    <p>${esc(a.desc)}</p>
+    <div class="meta">
+      <a href="https://github.com/${OWNER}/${a.repo}" target="_blank" rel="noopener" title="Репозиторій">${esc(a.repo)}</a>
+      <span>${dmy(a.upd)}</span>
+      <em>${esc(z.label)}</em>
+    </div>`;
+  d.querySelector('.star').addEventListener('click', e => {
+    e.preventDefault(); e.stopPropagation();
+    S.favs.has(a.repo) ? S.favs.delete(a.repo) : S.favs.add(a.repo);
+    store.set('flglass:favs', JSON.stringify([...S.favs]));
+    paint();
+  });
+  d.addEventListener('mouseenter', () => {
+    const p = pins.get(a.repo);
+    if (p) p.classList.add('hit');
+  });
+  d.addEventListener('mouseleave', () => {
+    const p = pins.get(a.repo);
+    if (p) p.classList.remove('hit');
+  });
+  return d;
+}
+
+function block(title, items){
+  const f = document.createDocumentFragment();
+  const h = document.createElement('div');
+  h.className = 'sect';
+  h.innerHTML = `<h2>${esc(title)}</h2><span class="ln"></span><span class="n">${items.length}</span>`;
+  const g = document.createElement('div');
+  g.className = 'cards';
+  items.forEach(a => g.appendChild(card(a)));
+  f.append(h, g);
+  return f;
+}
+
+function renderList(shown){
+  const box = el('list');
+  box.innerHTML = '';
+  const favs = shown.filter(a => S.favs.has(a.repo));
+  if (favs.length) box.appendChild(block('Швидкий доступ', favs));
+  GROUPS.forEach(g => {
+    const items = shown.filter(a => a.group === g.id && !S.favs.has(a.repo));
+    if (items.length) box.appendChild(block(g.label, items));
+  });
+  if (!shown.length){
+    const n = document.createElement('div');
+    n.className = 'none';
+    n.innerHTML = '<b>У цьому шарі порожньо</b>Спробуйте «варка», «вода», «тест», «замовлення» або назву репозиторію.';
+    box.appendChild(n);
+  }
+}
+
+/* ================= ЗАГАЛЬНЕ ПЕРЕМАЛЬОВУВАННЯ ================= */
+function paint(){
+  const shown = APPS.filter(fits);
+  const set = new Set(shown.map(a => a.repo));
+
+  pins.forEach((p, repo) => {
+    p.classList.toggle('mute', !set.has(repo));
+    p.classList.toggle('fav', S.favs.has(repo));
+  });
+
+  /* наведення різкості на обраний шар */
+  document.body.classList.toggle('focus', S.st !== 'all');
+  STATES.forEach(s => planes[s.id].classList.toggle('sharp', s.id === S.st));
+
+  ZONES.forEach(z => {
+    const on = S.zone === z.id, off = S.zone !== 'all' && !on;
+    halos.get(z.id).classList.toggle('on', on);
+    halos.get(z.id).classList.toggle('off', off);
+    labels.get(z.id).classList.toggle('on', on);
+    labels.get(z.id).classList.toggle('off', off);
+  });
+
+  buildChips();
+  renderList(shown);
+
+  const filtered = S.q || S.zone !== 'all' || S.st !== 'all' || S.role !== 'all';
+  el('peek').innerHTML = filtered
+    ? `<b>${shown.length}</b> з ${APPS.length} · торкніться, щоб відкрити список`
+    : `<b>${APPS.length} додатків</b> у семи ділянках · торкніться, щоб відкрити список`;
+  el('netText').textContent = navigator.onLine ? `${shown.length} / ${APPS.length}` : 'без мережі';
+}
+
+/* ================= ПОШУК І КЛАВІАТУРА ================= */
+el('q').addEventListener('input', e => { S.q = e.target.value.trim().toLowerCase(); paint(); });
+el('btnReset').addEventListener('click', () => {
+  S.q = ''; S.zone = 'all'; S.st = 'all'; S.role = 'all';
+  el('q').value = ''; paint();
+});
+addEventListener('keydown', e => {
+  const q = el('q');
+  if (e.key === '/' && document.activeElement !== q){
+    e.preventDefault(); openSheet(true); q.focus(); q.select();
+  }
+  if (e.key === 'Escape'){
+    if (q.value){ q.value = ''; S.q = ''; paint(); }
+    else openSheet(false);
+  }
+  if (e.key === 'Enter' && document.activeElement === q){
+    const first = el('list').querySelector('.go');
+    if (first) window.open(first.href, '_blank', 'noopener');
+  }
+});
+
+/* ================= СПОКІЙ ================= */
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const calm = () => store.get('flglass:calm') === '1';
+function applyCalm(){
+  const on = calm();
+  document.body.classList.toggle('calm', on);
+  el('btnCalm').classList.toggle('on', on);
+  if (on){ stopStars(); stopDrift(); } else { startStars(); startDrift(); }
+}
+el('btnCalm').addEventListener('click', () => { store.set('flglass:calm', calm() ? '0' : '1'); applyCalm(); });
+
+/* ================= ЗОРЯНИЙ ПИЛ ================= */
+let starRaf = null;
+function startStars(){
+  const c = el('stars');
+  if (!c || starRaf || calm() || reduced) return;
+  let ctx; try { ctx = c.getContext('2d'); } catch(e){ return; }
+  if (!ctx) return;
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  let w, h;
+  const size = () => { w = c.clientWidth; h = c.clientHeight; c.width = w * dpr; c.height = h * dpr; ctx.setTransform(dpr,0,0,dpr,0,0); };
+  size(); addEventListener('resize', size);
+
+  const dust = Array.from({length:190}, () => ({
+    x:Math.random(), y:Math.random(), z:.15 + Math.random() * .85,
+    r:.3 + Math.random() * 1.2, ph:Math.random() * 6.28
+  }));
+
+  let t = 0;
+  (function frame(){
+    if (document.hidden){ starRaf = requestAnimationFrame(frame); return; }
+    t += .0013;
+    ctx.clearRect(0,0,w,h);
+    for (const d of dust){
+      const y = ((d.y - t * d.z * .12) % 1 + 1) % 1;
+      const tw = .4 + .6 * Math.abs(Math.sin(d.ph + t * 7 * d.z));
+      const dx = px * d.z * .5, dy = py * d.z * .5;
+      ctx.beginPath();
+      ctx.arc(d.x * w + dx, y * h + dy, d.r * (.5 + d.z * .7), 0, 6.2832);
+      ctx.fillStyle = d.z > .7 ? `rgba(233,238,244,${.14 + tw * .46})`
+                    : d.z > .42 ? `rgba(111,143,208,${.08 + tw * .24})`
+                                : `rgba(85,169,155,${.05 + tw * .17})`;
+      ctx.fill();
+    }
+    starRaf = requestAnimationFrame(frame);
+  })();
+}
+function stopStars(){
+  if (starRaf){ cancelAnimationFrame(starRaf); starRaf = null; }
+  const c = el('stars');
+  try { c.getContext('2d').clearRect(0,0,c.width,c.height); } catch(e){}
+}
+
+/* ================= ПУСК ================= */
+layout();
+paint();
+applyCalm();
+addEventListener('resize', () => { layout(); hideTip(); }, {passive:true});
+addEventListener('scroll', hideTip, {passive:true});
+
+setTimeout(() => {
+  const b = el('boot');
+  b.classList.add('out');
+  setTimeout(() => b.remove(), 700);
+}, reduced ? 0 : 700);
+
+/* ================= МЕРЕЖА, ВСТАНОВЛЕННЯ, ОНОВЛЕННЯ ================= */
+function netState(){
+  el('net').classList.toggle('off', !navigator.onLine);
+  paint();
+}
+addEventListener('online', netState);
+addEventListener('offline', netState);
+
+let deferred = null;
+const btnInstall = el('btnInstall');
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; btnInstall.hidden = false; });
+btnInstall.addEventListener('click', async () => {
+  if (!deferred) return;
+  btnInstall.hidden = true;
+  deferred.prompt();
+  await deferred.userChoice;
+  deferred = null;
+});
+addEventListener('appinstalled', () => { btnInstall.hidden = true; deferred = null; });
+
+if ('serviceWorker' in navigator && location.protocol === 'https:'){
+  addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      const offer = worker => {
+        if (!worker) return;
+        el('toast').classList.add('show');
+        el('btnUpdate').onclick = () => { worker.postMessage('skip-waiting'); el('toast').classList.remove('show'); };
+      };
+      if (reg.waiting) offer(reg.waiting);
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', () => {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) offer(nw);
+        });
+      });
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (reloaded) return; reloaded = true; location.reload();
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) reg.update().catch(() => {});
+      });
+    }).catch(err => console.warn('[пульт] воркер не зареєструвався:', err));
+  });
+}
+</script>
+</body>
+</html>
