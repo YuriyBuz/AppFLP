@@ -630,7 +630,7 @@ function tip(a, pin){
   t.style.top = r.top + 'px';
   t.classList.add('show');
 }
-const hideTip = () => el('tip').classList.remove('show');
+function hideTip(){ el('tip').classList.remove('show'); }
 
 /* ================= ШТОРКА ================= */
 const sheet = el('sheet'), grip = el('grip');
